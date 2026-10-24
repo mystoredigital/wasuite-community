@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/img/portada.png" alt="Wa Suite: CRM de ventas por WhatsApp con IA, en tu propio servidor" width="100%"></p>
+
 # wasuite
 
 **CRM de ventas por WhatsApp con IA incluida, instalado en tu propio servidor.**
@@ -19,6 +21,35 @@ bot con IA entrenable, handoff a humano y laboratorio de calidad del bot.
                          wa.tudominio.com            crm.tudominio.com
                                 └──── login único (cookie compartida) ───┘
 ```
+
+## Así se ve
+
+**Bandeja de WhatsApp en tiempo real.** La IA responde y marca sus mensajes; tú tomas el chat cuando quieras. Tema claro y oscuro.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/img/inbox.png" alt="Bandeja en tema claro"></td>
+    <td width="50%"><img src="docs/img/inbox-oscuro.png" alt="Bandeja en tema oscuro"></td>
+  </tr>
+</table>
+
+**Pipeline y contactos.** Cada mensaje nuevo crea el contacto y le abre un lead; lo mueves entre etapas arrastrando.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/img/pipeline.png" alt="Pipeline kanban"></td>
+    <td width="50%"><img src="docs/img/contacts.png" alt="Contactos"></td>
+  </tr>
+</table>
+
+**El bot.** Lo enciendes o apagas, le escribes su personalidad y, antes de soltarlo con clientes reales, el Laboratorio lo pone a conversar con seis clientes simulados y un juez IA lo califica de 0 a 100.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/img/wa-bot.png" alt="Configuración del bot"></td>
+    <td width="50%"><img src="docs/img/wa-laboratorio.png" alt="Laboratorio de evaluación del bot"></td>
+  </tr>
+</table>
 
 ## Qué incluye
 
