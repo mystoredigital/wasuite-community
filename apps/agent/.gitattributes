@@ -1,0 +1,19 @@
+# Normaliza fin de línea: el repo guarda LF y git ignora diferencias CRLF/LF
+# en el working tree. Necesario porque la carpeta se sincroniza entre máquinas
+# (Syncthing) y algún editor/OS puede escribir CRLF — sin esto, cada archivo
+# aparecía como "modificado" por puro cambio de EOL.
+* text=auto eol=lf
+
+# Binarios: nunca tocar (evita corrupción por conversión de EOL)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.ogg binary
+*.mp3 binary
+*.mp4 binary
+*.woff binary
+*.woff2 binary

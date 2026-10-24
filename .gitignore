@@ -1,0 +1,24 @@
+# Entorno — NUNCA versionar secretos
+.env
+.env.*
+!.env.example
+
+# Dependencias y builds
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Datos en runtime (volúmenes locales)
+data/
+.pgdata/
+
+# Credenciales (montadas en el contenedor del agente)
+credentials/*
+!credentials/.gitkeep
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+
+# Conflictos de Syncthing — jamás deben entrar al repo
+*.sync-conflict-*

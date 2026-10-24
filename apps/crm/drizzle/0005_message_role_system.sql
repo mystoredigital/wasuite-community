@@ -1,0 +1,1 @@
+ALTER TABLE "message" ADD CONSTRAINT "message_role_ck" CHECK ("message"."role" in ('user','assistant','operator','system'));

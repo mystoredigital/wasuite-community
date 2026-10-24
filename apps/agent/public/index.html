@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>My Store · WhatsApp Agent</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<link rel="stylesheet" href="/style.css?v=20260804a" />
+</head>
+<body>
+<div class="app">
+
+<nav class="nav-sidebar" id="navSidebar">
+  <div class="nav-brand">
+    <div class="nav-brand-title">My Store</div>
+    <div class="nav-brand-sub">WhatsApp Agent</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-title">Operación</div>
+    <button class="nav-item active" data-view="inbox" type="button">
+      <span class="nav-icon">💬</span><span>Bandeja</span>
+    </button>
+    <button class="nav-item" data-view="stats" type="button">
+      <span class="nav-icon">📊</span><span>Resumen</span>
+    </button>
+    <button class="nav-item" data-view="audit" type="button">
+      <span class="nav-icon">📝</span><span>Audit log</span>
+    </button>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-title">Configuración</div>
+    <button class="nav-item" data-view="numbers" type="button">
+      <span class="nav-icon">📱</span><span>Números</span>
+    </button>
+    <button class="nav-item" data-view="groups" type="button">
+      <span class="nav-icon">👥</span><span>Grupos</span>
+    </button>
+    <button class="nav-item" data-view="prompt" type="button">
+      <span class="nav-icon">✏️</span><span>Editar prompt</span>
+    </button>
+    <button class="nav-item" data-view="kb" type="button">
+      <span class="nav-icon">📚</span><span>Conocimiento</span>
+    </button>
+    <button class="nav-item" data-view="lab" type="button">
+      <span class="nav-icon">🧪</span><span>Laboratorio</span>
+    </button>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-title">Integraciones</div>
+    <button class="nav-item" data-view="apikeys" type="button">
+      <span class="nav-icon">🔑</span><span>API keys</span>
+    </button>
+    <button class="nav-item" data-view="webhooks" type="button">
+      <span class="nav-icon">🔔</span><span>Webhooks</span>
+    </button>
+  </div>
+
+  <!-- Sección admin: visible solo cuando role=admin. JS oculta esta clase
+       para clientes (data-admin-only). -->
+  <div class="nav-section" data-admin-only>
+    <div class="nav-title">Administración</div>
+    <button class="nav-item" data-view="users" type="button">
+      <span class="nav-icon">🧑‍💼</span><span>Usuarios</span>
+    </button>
+  </div>
+
+  <div class="nav-footer">
+    <div class="nav-footer-line" id="navStatus">conectando…</div>
+  </div>
+</nav>
+
+<div class="app-main">
+
+<header class="topbar">
+  <select id="tenantSelect" class="select"></select>
+  <span id="ghlBadge" class="badge"></span>
+  <button id="btnRelink" class="btn-sm hidden">Re-link QR</button>
+  <button id="btnProvisionProvider" class="btn-sm warn hidden" title="Crea un Conversation Provider para esta sub-account (requerido para que GHL acepte mensajes inbound)">⚠ Provisionar provider</button>
+  <span id="metricsBar" class="metrics" title="Contadores desde el inicio del proceso"></span>
+  <span class="topbar-spacer"></span>
+  <span class="status" id="connStatus">conectando…</span>
+  <label class="ai-global" title="Pausa la IA para TODAS las conversaciones de este tenant">
+    <input type="checkbox" id="aiGlobalToggle" />
+    <span id="aiGlobalLabel">Modo humano global</span>
+  </label>
+  <!-- User widget — render dinámico desde app.js tras /api/me -->
+  <span id="userChip" class="user-chip hidden">
+    <span class="avatar" id="userAvatar">?</span>
+    <span>
+      <span class="user-name" id="userName"></span>
+      <span class="user-role" id="userRole"></span>
+    </span>
+    <button id="userLogout" class="logout" title="Cerrar sesión" type="button">⎋</button>
+  </span>
+</header>
+
+<!-- Disparadores ocultos: el nav-item dispara su .click() y reusa toda la logica
+     existente (open*Modal). Asi no toco app.js mas que el wire de la nav. -->
+<div class="hidden">
+  <button id="btnStats"></button>
+  <button id="btnNumbers"></button>
+  <button id="btnGroups"></button>
+  <button id="btnAudit"></button>
+  <button id="btnApiKeys"></button>
+  <button id="btnWebhooks"></button>
+  <button id="btnPrompt"></button>
+  <button id="btnUsers"></button>
+  <button id="btnKb"></button>
+  <button id="btnLab"></button>
+</div>
+
+<main class="layout">
+  <aside class="sidebar">
+    <h2>Conversaciones</h2>
+    <div class="search">
+      <input type="search" id="searchInput" placeholder="Buscar por nombre, número o mensaje…" autocomplete="off" />
+    </div>
+    <ul id="chatList"></ul>
+  </aside>
+
+  <section class="chat">
+    <header class="chat-header">
+      <button id="btnBackMobile" class="btn-back-mobile" title="Volver a la lista" type="button" aria-label="Volver a la lista">←</button>
+      <div class="chat-header-info">
+        <div id="chatTitle">Selecciona un chat</div>
+        <div id="chatSubtitle" class="chat-subtitle"></div>
+      </div>
+      <div class="chat-header-actions">
+        <label class="toggle">
+          <input type="checkbox" id="modeToggle" />
+          <span>Modo humano</span>
+        </label>
+        <button id="btnMergeConv" class="btn-icon" title="Combinar esta conversación con otra (mismo contacto bajo distinto JID)" type="button" disabled>⋮</button>
+      </div>
+    </header>
+    <div class="messages" id="messages"></div>
+    <footer class="composer">
+      <div id="replyContextBar" class="reply-context hidden">
+        <div class="reply-content">
+          <div class="reply-label">Respondiendo a <span id="replyContextAuthor"></span></div>
+          <div class="reply-text" id="replyContextText"></div>
+        </div>
+        <button id="replyContextCancel" type="button" class="reply-cancel" title="Cancelar (Esc)">✕</button>
+      </div>
+      <!-- Adjunto en cola (pegado con Ctrl/Cmd+V o elegido con el clip) -->
+      <div id="stagedBar" class="staged-bar hidden">
+        <img id="stagedThumb" class="staged-thumb hidden" alt="" />
+        <span id="stagedName" class="staged-name"></span>
+        <button id="stagedCancel" type="button" class="reply-cancel" title="Quitar adjunto">✕</button>
+      </div>
+      <div class="composer-row">
+        <label class="attach-btn" title="Adjuntar archivo">
+          <input type="file" id="manualFile" hidden accept="image/*,video/*,audio/*,application/pdf,application/*" />
+          <span id="attachIcon">📎</span>
+        </label>
+        <button id="manualRecord" class="attach-btn" type="button" title="Grabar nota de voz" disabled>🎤</button>
+        <input type="text" id="manualInput" placeholder="Mensaje manual (modo humano)…" disabled />
+        <button id="manualSend" class="btn primary" disabled>Enviar</button>
+      </div>
+      <!-- Barra de grabación en curso — visible mientras se graba una nota de voz -->
+      <div id="recordingBar" class="recording-bar hidden">
+        <span class="rec-dot"></span>
+        <span class="rec-label">Grabando</span>
+        <span id="recordingTimer" class="rec-timer">0:00</span>
+        <span class="topbar-spacer"></span>
+        <button id="recordCancel" class="btn-sm warn" type="button" title="Cancelar grabación">✕ Cancelar</button>
+        <button id="recordStop" class="btn-sm primary" type="button" title="Detener y enviar">▶ Enviar</button>
+      </div>
+    </footer>
+  </section>
+</main>
+
+</div><!-- /.app-main -->
+</div><!-- /.app -->
+
+<div id="qrModal" class="modal hidden">
+  <div class="modal-body qr-body">
+    <button id="qrClose" class="modal-close" type="button" title="Cerrar (Esc)">✕</button>
+    <h3>Escanea para vincular WhatsApp</h3>
+    <img id="qrImg" alt="QR" />
+    <p>WhatsApp &gt; Dispositivos vinculados &gt; Vincular un dispositivo</p>
+    <p class="qr-hint">Puedes cerrar y volver a abrirlo desde <strong>Números → Re-link QR</strong>.</p>
+  </div>
+</div>
+
+<div id="numbersModal" class="modal hidden">
+  <div class="modal-body large">
+    <h3>Números de WhatsApp</h3>
+    <p style="color:#8899a6;font-size:13px;margin-top:0">Cada número es una sesión Baileys independiente. El primer mensaje recibido o enviado fija qué número usar para responder a cada contacto.</p>
+    <div id="numbersList" class="numbers-list">
+      <div class="empty">Cargando…</div>
+    </div>
+    <div class="add-number">
+      <h4>Añadir número</h4>
+      <div class="row">
+        <input type="text" id="newNumberId" placeholder="id (ej: ventas)" maxlength="32" />
+        <input type="text" id="newNumberLabel" placeholder="Etiqueta visible" />
+        <button id="numbersAdd" class="btn primary">Crear</button>
+      </div>
+      <div style="font-size:11px;color:#5b6b7a;margin-top:4px">El id se usa internamente (slug). La etiqueta es lo que verás en el dashboard.</div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button id="numbersClose" class="btn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="statsModal" class="modal hidden">
+  <div class="modal-body large">
+    <h3>Resumen</h3>
+    <div id="statsBody"><div class="empty">Cargando…</div></div>
+    <div class="row" style="margin-top:16px">
+      <button id="statsRefresh" class="btn">Recargar</button>
+      <button id="statsClose" class="btn primary">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="webhooksModal" class="modal hidden">
+  <div class="modal-body large">
+    <h3>Webhooks salientes</h3>
+    <p style="color:#8899a6;font-size:13px;margin-top:0">El server hace POST al URL registrado cuando ocurren eventos. Cada delivery lleva header <code>X-Webhook-Signature: sha256=&lt;hex&gt;</code> donde hex = HMAC-SHA256(secret, body). El receptor recalcula y compara para validar autenticidad. 2 reintentos con backoff (2s, 8s).</p>
+    <div id="webhooksList" class="webhooks-list">
+      <div class="empty">Cargando…</div>
+    </div>
+    <div class="add-number">
+      <h4>Crear nuevo webhook</h4>
+      <div class="row" style="flex-direction:column;align-items:stretch;gap:6px">
+        <input type="url" id="newWebhookUrl" placeholder="https://tu-server.com/wa-hook" />
+        <div id="newWebhookEvents" class="webhook-events">
+          <!-- checkboxes generados dinámicamente -->
+        </div>
+        <button id="webhooksCreate" class="btn primary">Crear webhook</button>
+      </div>
+      <div id="newWebhookResult" class="new-key-result hidden">
+        <div class="warn-banner">⚠ Guarda el secret AHORA. No volverá a mostrarse.</div>
+        <code id="newWebhookSecret"></code>
+        <button id="newWebhookCopy" class="btn">Copiar</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button id="webhooksClose" class="btn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="apiKeysModal" class="modal hidden">
+  <div class="modal-body large">
+    <h3>API keys</h3>
+    <p style="color:#8899a6;font-size:13px;margin-top:0">Tokens Bearer para integraciones (n8n, scripts, Make). Una key opera sobre el tenant que la creó. El token completo solo se muestra al crearlo — guárdalo en un lugar seguro.</p>
+    <div id="apiKeysList" class="api-keys-list">
+      <div class="empty">Cargando…</div>
+    </div>
+    <div class="add-number">
+      <h4>Crear nueva key</h4>
+      <div class="row">
+        <input type="text" id="newKeyLabel" placeholder='Etiqueta (ej: "n8n-prod")' maxlength="64" />
+        <button id="apiKeysCreate" class="btn primary">Crear</button>
+      </div>
+      <div id="newKeyResult" class="new-key-result hidden">
+        <div class="warn-banner">⚠ Copia el token AHORA. No volverá a mostrarse.</div>
+        <code id="newKeyToken"></code>
+        <button id="newKeyCopy" class="btn">Copiar</button>
+      </div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button id="apiKeysClose" class="btn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="usersModal" class="modal hidden">
+  <div class="modal-body large">
+    <h3>Usuarios del dashboard</h3>
+    <p style="color:#8899a6;font-size:13px;margin-top:0">Cuentas que pueden ingresar al dashboard vía <code>/login</code>. <strong>admin</strong> ve todos los tenants; <strong>client</strong> queda scoped a su location. El password solo se muestra al crear o resetear — copialo y pasáselo al cliente por canal seguro.</p>
+
+    <div class="new-user-form">
+      <label>Username
+        <input type="text" id="newUserName" placeholder="ej: miempresa" maxlength="32" autocomplete="off" />
+      </label>
+      <label>Rol
+        <select id="newUserRole">
+          <option value="client">client (scoped)</option>
+          <option value="admin">admin (todos los tenants)</option>
+        </select>
+      </label>
+      <label>Tenant
+        <select id="newUserTenant"></select>
+      </label>
+      <button id="usersCreate" class="btn primary">Crear</button>
+    </div>
+
+    <div id="newUserResult" class="password-banner hidden">
+      <div class="pw-label">⚠ Password generado (se muestra una sola vez)</div>
+      <div class="pw-value" id="newUserPassword"></div>
+      <div class="pw-hint">Copialo ahora. No vuelve a aparecer — si se pierde, se debe resetear.</div>
+    </div>
+
+    <div id="usersList" class="users-grid">
+      <div class="empty">Cargando…</div>
+    </div>
+
+    <div class="row" style="margin-top:16px">
+      <button id="usersClose" class="btn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="auditModal" class="modal hidden">
+  <div class="modal-body large">
+    <h3>Audit log</h3>
+    <p style="color:#8899a6;font-size:13px;margin-top:0">Últimas acciones del operador (envíos manuales, cambios de modo, alta/baja de números, etc). Append-only en data/audit.jsonl.</p>
+    <div class="row" style="margin-bottom:8px;gap:8px;align-items:center">
+      <select id="auditType" class="btn">
+        <option value="">Todos los tipos</option>
+        <option value="send">send</option>
+        <option value="send-media">send-media</option>
+        <option value="mode">mode</option>
+        <option value="ai-enabled">ai-enabled</option>
+        <option value="config">config</option>
+        <option value="conv-merge">conv-merge</option>
+        <option value="group-toggle">group-toggle</option>
+        <option value="number-add">number-add</option>
+        <option value="number-remove">number-remove</option>
+        <option value="relink">relink</option>
+        <option value="provision-provider">provision-provider</option>
+      </select>
+      <button id="auditRefresh" class="btn">Recargar</button>
+      <span id="auditCount" style="font-size:12px;color:#5b6b7a;margin-left:auto"></span>
+    </div>
+    <div id="auditList" class="audit-list">
+      <div class="empty">Cargando…</div>
+    </div>
+    <div class="row">
+      <button id="auditClose" class="btn primary">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="groupsModal" class="modal hidden">
+  <div class="modal-body large">
+    <h3>Grupos de WhatsApp</h3>
+    <p style="color:#8899a6;font-size:13px;margin-top:0">Solo los grupos habilitados aparecen en la bandeja. Por defecto ninguno — actívalos para empezar a verlos.</p>
+    <input type="search" id="groupsSearch" placeholder="Filtrar por nombre…" autocomplete="off" />
+    <div id="groupsList" class="groups-list">
+      <div class="empty">Cargando…</div>
+    </div>
+    <div class="row">
+      <button id="groupsRefresh" class="btn">Recargar</button>
+      <button id="groupsClose" class="btn primary">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="mergeModal" class="modal hidden">
+  <div class="modal-body large">
+    <h3>Combinar conversaciones</h3>
+    <p style="color:#8899a6;font-size:13px;margin-top:0">
+      Une dos chats que correspondan al mismo contacto (aparecen duplicados típicamente cuando WhatsApp usa <code>@lid</code> + <code>@s.whatsapp.net</code> para el mismo número).
+      Los mensajes se combinan ordenados por fecha y el chat origen se elimina. <strong>No se puede deshacer.</strong>
+    </p>
+    <div id="mergeTargetInfo" class="merge-target"></div>
+    <input type="search" id="mergeSearch" placeholder="Filtrar conversaciones…" autocomplete="off" />
+    <div id="mergeList" class="merge-list">
+      <div class="empty">Selecciona un chat primero.</div>
+    </div>
+    <div class="row">
+      <button id="mergeCancel" class="btn">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="promptModal" class="modal hidden">
+  <div class="modal-body large">
+    <h3>System Prompt</h3>
+    <textarea id="promptText" rows="18"></textarea>
+    <div class="row">
+      <button id="promptCancel" class="btn">Cancelar</button>
+      <button id="promptSave" class="btn primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Base de conocimiento: lo que el agente sabe del negocio. Q&A estructuradas
+     (editables una por una, y el Laboratorio puede añadirlas solo) + un bloque
+     libre para lo que no encaja como pregunta/respuesta. -->
+<div id="kbModal" class="modal hidden">
+  <div class="modal-body large">
+    <h3>Base de conocimiento</h3>
+    <p class="hint">
+      Esto es lo que el agente sabe del negocio y usa como fuente de verdad.
+      Lo que no esté aquí, no lo sabe — y lo dirá en vez de inventarlo.
+    </p>
+
+    <div class="kb-add">
+      <input id="kbQ" class="input" type="text" placeholder="Pregunta — ej: ¿Hacen envíos a todo el país?" />
+      <textarea id="kbA" class="input" rows="3" placeholder="Respuesta — ej: Sí, enviamos a todo el país. El envío tarda 2-3 días y es gratis desde $50."></textarea>
+      <div class="row">
+        <span id="kbEditingHint" class="hint hidden"></span>
+        <button id="kbCancelEdit" class="btn hidden">Cancelar edición</button>
+        <button id="kbAdd" class="btn primary">Añadir</button>
+      </div>
+    </div>
+
+    <div id="kbList" class="kb-list"></div>
+
+    <details class="kb-free">
+      <summary>Texto libre (opcional)</summary>
+      <p class="hint">Para lo que no es pregunta/respuesta: catálogo, horarios, políticas.</p>
+      <textarea id="kbFreeText" rows="6"></textarea>
+      <div class="row">
+        <button id="kbSaveText" class="btn">Guardar texto libre</button>
+      </div>
+    </details>
+
+    <div class="row">
+      <button id="kbClose" class="btn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Laboratorio: seis clientes simulados conversan contra el agente REAL en un
+     sandbox que nunca toca WhatsApp, y un LLM juez los evalúa. -->
+<div id="labModal" class="modal hidden">
+  <div class="modal-body large">
+    <div class="lab-head">
+      <div>
+        <h3>Laboratorio</h3>
+        <p class="hint">
+          Seis clientes simulados hablan con tu agente real. Nada de esto sale a WhatsApp.
+          Un juez independiente los evalúa y te dice dónde falla.
+          <a href="/docs/laboratorio.html" target="_blank" rel="noopener">Cómo funciona ↗</a>
+        </p>
+      </div>
+      <div class="lab-score-box">
+        <div id="labScore" class="lab-score">—</div>
+        <div id="labDelta" class="lab-delta"></div>
+      </div>
+    </div>
+
+    <div class="row lab-actions">
+      <span id="labStatus" class="hint"></span>
+      <button id="labRun" class="btn primary">Probar agente</button>
+    </div>
+
+    <div id="labCases" class="lab-cases"></div>
+
+    <details id="labHistoryWrap" class="lab-history">
+      <summary>Historial de corridas</summary>
+      <div id="labHistory"></div>
+    </details>
+
+    <div class="row">
+      <button id="labClose" class="btn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/app.js?v=20260804a"></script>
+</body>
+</html>

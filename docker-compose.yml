@@ -1,0 +1,122 @@
+# wasuite — CRM + Agente de WhatsApp con IA en una sola instalación.
+#
+# Producción detrás de Traefik (Dokploy o equivalente): Traefik ya corre en el
+# host y enruta por dominio con certificados Let's Encrypt. NO se publican
+# puertos al host; el tráfico entra por la red del proxy.
+#
+# Un solo .env en esta carpeta configura TODO (ver .env.example). Genera los
+# secretos con: node scripts/setup-env.mjs
+#
+# Para probar en local sin Traefik usa docker-compose.local.yml.
+services:
+  crm:
+    build:
+      context: ./apps/crm
+      dockerfile: Dockerfile
+    image: wasuite-crm:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-crm}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-crm}
+      # Login único: mismo secreto y misma cookie que el agente.
+      SESSION_SECRET: ${SESSION_SECRET}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      # El agente empuja leads aquí; misma key en ambos lados.
+      INGEST_API_KEY: ${INGEST_API_KEY}
+      # Inbox unificado + validación de login: agente por la red interna.
+      AGENT_API_URL: http://agent:3000
+      AGENT_DASHBOARD_URL: https://${WA_DOMAIN}
+      NODE_ENV: production
+      PORT: 3000
+    networks:
+      - proxy
+      - internal
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.wasuite-crm.entrypoints=websecure
+      - traefik.http.routers.wasuite-crm.rule=Host(`${CRM_DOMAIN}`)
+      - traefik.http.routers.wasuite-crm.tls.certresolver=letsencrypt
+      - traefik.http.services.wasuite-crm.loadbalancer.server.port=3000
+
+  agent:
+    build:
+      context: ./apps/agent
+      dockerfile: Dockerfile
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_AT: ${BUILD_AT:-unknown}
+    image: wasuite-agent:latest
+    restart: unless-stopped
+    # Todo el .env pasa al agente (OpenRouter, anti-ban, GHL, R2, etc.) y abajo
+    # se fijan las variables que dependen de la topología del compose.
+    env_file:
+      - .env
+    environment:
+      PORT: 3000
+      PUBLIC_URL: https://${WA_DOMAIN}
+      SESSION_SECRET: ${SESSION_SECRET}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      # Ingesta de leads hacia el CRM por la red interna.
+      CRM_INGEST_URL: http://crm:3000/api/ingest/whatsapp
+      CRM_INGEST_KEY: ${INGEST_API_KEY}
+      # Transcripción de audios (perfil opcional 'whisper').
+      WHISPER_URL: ${WHISPER_URL:-}
+    volumes:
+      - agent-data:/app/data
+      - ./credentials:/app/credentials
+    networks:
+      - proxy
+      - internal
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.wasuite-agent.entrypoints=websecure
+      - traefik.http.routers.wasuite-agent.rule=Host(`${WA_DOMAIN}`)
+      - traefik.http.routers.wasuite-agent.tls.certresolver=letsencrypt
+      - traefik.http.services.wasuite-agent.loadbalancer.server.port=3000
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-crm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-crm}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  whisper:
+    # ASR opcional para transcribir notas de voz. Actívalo con:
+    #   COMPOSE_PROFILES=whisper docker compose up -d
+    # y define WHISPER_URL=http://whisper:8000 en el .env.
+    image: fedirz/faster-whisper-server:latest-cpu
+    restart: unless-stopped
+    profiles: ["whisper"]
+    environment:
+      WHISPER__MODEL: Systran/faster-whisper-small
+      WHISPER__INFERENCE_DEVICE: cpu
+      WHISPER__COMPUTE_TYPE: int8
+      DEFAULT_LANGUAGE: es
+    volumes:
+      - whisper-cache:/root/.cache/huggingface
+    networks:
+      - internal
+
+networks:
+  proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK:-dokploy-network}
+  internal:
+
+volumes:
+  pgdata:
+  agent-data:
+  whisper-cache:

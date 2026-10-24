@@ -1,0 +1,97 @@
+# wasuite en LOCAL — sin Traefik ni dominios. Publica puertos directo al host:
+#   CRM:    http://localhost:3000
+#   Agente: http://localhost:3001
+#
+#   docker compose -f docker-compose.local.yml up -d --build
+#
+# Usa el mismo .env que producción (los dominios se ignoran aquí). Deja
+# COOKIE_DOMAIN vacío en local: localhost comparte cookies entre puertos, así
+# que el login único funciona igual.
+services:
+  crm:
+    build:
+      context: ./apps/crm
+      dockerfile: Dockerfile
+    image: wasuite-crm:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-crm}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-crm}
+      SESSION_SECRET: ${SESSION_SECRET}
+      INGEST_API_KEY: ${INGEST_API_KEY}
+      AGENT_API_URL: http://agent:3000
+      AGENT_DASHBOARD_URL: http://localhost:3001
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    networks:
+      - internal
+
+  agent:
+    build:
+      context: ./apps/agent
+      dockerfile: Dockerfile
+    image: wasuite-agent:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: 3000
+      PUBLIC_URL: http://localhost:3001
+      SESSION_SECRET: ${SESSION_SECRET}
+      COOKIE_DOMAIN: ""
+      CRM_INGEST_URL: http://crm:3000/api/ingest/whatsapp
+      CRM_INGEST_KEY: ${INGEST_API_KEY}
+      WHISPER_URL: ${WHISPER_URL:-}
+    ports:
+      - "3001:3000"
+    volumes:
+      - agent-data:/app/data
+      - ./credentials:/app/credentials
+    networks:
+      - internal
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-crm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-crm}
+    # 5433 en el host por defecto: es común que ya exista un Postgres local en 5432.
+    ports:
+      - "${DB_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  whisper:
+    image: fedirz/faster-whisper-server:latest-cpu
+    restart: unless-stopped
+    profiles: ["whisper"]
+    environment:
+      WHISPER__MODEL: Systran/faster-whisper-small
+      WHISPER__INFERENCE_DEVICE: cpu
+      WHISPER__COMPUTE_TYPE: int8
+      DEFAULT_LANGUAGE: es
+    volumes:
+      - whisper-cache:/root/.cache/huggingface
+    networks:
+      - internal
+
+networks:
+  internal:
+
+volumes:
+  pgdata:
+  agent-data:
+  whisper-cache:

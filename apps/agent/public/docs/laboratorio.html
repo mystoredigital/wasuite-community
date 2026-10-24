@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>El Laboratorio · Guía · WhatsApp Agent</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<style>
+  :root {
+    --bg-0: #0a1018;
+    --bg-2: #131c27;
+    --bg-3: #16202a;
+    --bg-4: #1c2a36;
+    --border: #243140;
+    --border-soft: #1c2630;
+    --text-0: #f0f3f6;
+    --text-1: #d6e1ec;
+    --text-2: #8899a6;
+    --text-3: #5b6b7a;
+    --accent: #1d9bf0;
+    --success: #4caf50;
+    --warning: #ffb300;
+    --danger: #f44336;
+    --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg-0);
+    color: var(--text-1);
+    font-family: var(--font);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  header.hero { margin-bottom: 48px; }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 40px;
+    line-height: 1.15;
+    margin: 0 0 16px;
+    color: var(--text-0);
+    letter-spacing: -0.02em;
+  }
+  .lede { font-size: 19px; color: var(--text-2); margin: 0; }
+
+  h2 {
+    font-size: 24px;
+    color: var(--text-0);
+    margin: 56px 0 16px;
+    letter-spacing: -0.01em;
+  }
+  h3 { font-size: 17px; color: var(--text-0); margin: 32px 0 8px; }
+  p { margin: 0 0 16px; }
+  strong { color: var(--text-0); font-weight: 600; }
+  a { color: var(--accent); }
+
+  .callout {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin: 24px 0;
+  }
+  .callout.warn { border-left-color: var(--warning); }
+  .callout.good { border-left-color: var(--success); }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout-title { font-weight: 600; color: var(--text-0); margin-bottom: 6px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+  }
+  .table-scroll { overflow-x: auto; }
+  th, td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: top;
+  }
+  th {
+    color: var(--text-2);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom-color: var(--border);
+  }
+  td:first-child { color: var(--text-0); font-weight: 500; white-space: nowrap; }
+
+  ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 24px 0; }
+  ol.steps > li {
+    counter-increment: s;
+    position: relative;
+    padding: 0 0 24px 44px;
+    border-left: 1px solid var(--border);
+    margin-left: 14px;
+  }
+  ol.steps > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  ol.steps > li::before {
+    content: counter(s);
+    position: absolute;
+    left: -14px;
+    top: -2px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  ol.steps h3 { margin: 2px 0 6px; }
+
+  .verdicts { display: flex; flex-direction: column; gap: 10px; margin: 24px 0; }
+  .v {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: var(--bg-3);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .v-dot { font-size: 18px; line-height: 1.3; }
+  .v-name { font-weight: 600; color: var(--text-0); }
+  .v-desc { font-size: 14px; color: var(--text-2); }
+
+  .score-demo {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin: 24px 0;
+  }
+  .score-num {
+    font-size: 46px;
+    font-weight: 700;
+    color: var(--success);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-delta { font-size: 12px; color: var(--success); margin-top: 4px; }
+  .score-txt { font-size: 14px; color: var(--text-2); }
+
+  code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg-4);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text-0);
+  }
+
+  .finding-demo {
+    background: var(--bg-4);
+    border-left: 2px solid var(--danger);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin: 16px 0;
+  }
+  .finding-tag {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--danger);
+  }
+  .finding-ev { font-size: 14px; font-style: italic; color: var(--text-1); margin: 6px 0; }
+  .finding-sug {
+    background: var(--bg-2);
+    border-radius: 5px;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text-2);
+    margin-top: 8px;
+  }
+
+  hr { border: 0; border-top: 1px solid var(--border-soft); margin: 56px 0; }
+  footer { color: var(--text-3); font-size: 13px; }
+  footer a { color: var(--text-2); }
+
+  @media (max-width: 600px) {
+    .wrap { padding: 32px 18px 64px; }
+    h1 { font-size: 30px; }
+    .lede { font-size: 17px; }
+    .score-demo { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Guía · WhatsApp Agent</div>
+  <h1>El Laboratorio</h1>
+  <p class="lede">
+    Tu agente de IA se pone a prueba solo, antes de hablar con un cliente de verdad.
+    Deja de esperar que el bot funcione: mídelo.
+  </p>
+</header>
+
+<h2>El problema que resuelve</h2>
+
+<p>
+  Cuando cambias el prompt de tu agente o le añades información, no tienes forma de saber
+  si lo mejoraste o lo rompiste. Escribes un par de mensajes de prueba, parece que va bien,
+  y lo dejas suelto. El fallo lo descubre un cliente.
+</p>
+
+<p>
+  Lo que de verdad te preocupa no se ve en dos mensajes de prueba: <strong>¿se inventa
+  precios que no le diste? ¿Deja al cliente esperando cuando pide hablar con una persona?
+  ¿Suena a robot cuando alguien llega enfadado?</strong>
+</p>
+
+<p>
+  El Laboratorio contesta esas preguntas con un número y con pruebas.
+</p>
+
+<h2>Cómo funciona</h2>
+
+<p>
+  Seis clientes simulados conversan con tu agente <strong>real</strong> —el mismo que
+  atiende tu WhatsApp, con tu mismo prompt y tu misma base de conocimiento— dentro de un
+  sandbox. Después, un segundo modelo de IA hace de <strong>juez independiente</strong>:
+  lee cada conversación y dictamina si el agente lo hizo bien, señalando exactamente dónde
+  falló y con qué frase.
+</p>
+
+<div class="callout good">
+  <div class="callout-title">Nada de esto sale a WhatsApp</div>
+  <p>
+    Las conversaciones ocurren en un entorno aislado. No se envía un solo mensaje real, no
+    se contacta a ningún número y tus clientes no se enteran de nada. Puedes correrlo las
+    veces que quieras.
+  </p>
+</div>
+
+<p>
+  Los clientes simulados <strong>siguen un guion fijo</strong>: no improvisan. Eso es
+  deliberado, y es lo que hace que el Laboratorio sirva para algo. Si el cliente simulado
+  dijera cosas distintas cada vez, no podrías comparar dos corridas. Como el guion es
+  siempre el mismo, cuando el resultado cambia sabes que cambió <em>por tu agente</em>, no
+  por azar.
+</p>
+
+<h2>Los seis clientes</h2>
+
+<p>Cada uno existe para destapar un fallo distinto:</p>
+
+<div class="table-scroll">
+<table>
+  <thead>
+    <tr><th>Cliente</th><th>Qué mide</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Comprador decidido</td>
+      <td>¿Sabe cerrar? Va directo a comprar: el agente debe llevarlo a un siguiente paso concreto sin inventarse condiciones.</td>
+    </tr>
+    <tr>
+      <td>Preguntón de precios</td>
+      <td>¿Se inventa precios? Pregunta precio tras precio. Si no los tienes cargados, el agente debe admitirlo, no improvisar cifras.</td>
+    </tr>
+    <tr>
+      <td>Cliente enojado</td>
+      <td>¿Aguanta el tono? Llega furioso por un problema. El agente debe mantenerse humano y pasar el caso a una persona.</td>
+    </tr>
+    <tr>
+      <td>Pregunta fuera del conocimiento</td>
+      <td><strong>El caso crítico.</strong> Pregunta datos que no le diste (una póliza, un representante legal). Si el agente se los inventa, es una alucinación y es la falla más grave.</td>
+    </tr>
+    <tr>
+      <td>Exige un humano</td>
+      <td>¿Escala? Pide hablar con una persona desde el principio. El agente no debe insistir en atenderlo él.</td>
+    </tr>
+    <tr>
+      <td>Escribe con faltas</td>
+      <td>¿Entiende igual? Mensajes informales, sin tildes y con errores. El agente no debe perder el hilo ni sonar condescendiente.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Cómo se usa</h2>
+
+<ol class="steps">
+  <li>
+    <h3>Carga primero la base de conocimiento</h3>
+    <p>
+      Ve a <strong>Conocimiento</strong> en el menú lateral y añade las preguntas que más te
+      hacen tus clientes, con su respuesta. Qué vendes, cómo cobras, qué plazos manejas.
+    </p>
+    <p>
+      Esto es lo primero por una razón: la base de conocimiento es la <strong>única fuente de
+      verdad</strong> del agente. Lo que no esté ahí, no lo sabe. Si corres el Laboratorio con
+      la base vacía, el juez lo va a crujir con razón, porque el agente no tiene con qué
+      responder.
+    </p>
+  </li>
+  <li>
+    <h3>Pulsa «Probar agente»</h3>
+    <p>
+      En la pestaña <strong>Laboratorio</strong>. Tarda unos 30 segundos y verás los seis casos
+      resolverse en vivo. Cuesta unos céntimos de OpenRouter por corrida.
+    </p>
+  </li>
+  <li>
+    <h3>Lee los hallazgos, no solo el número</h3>
+    <p>
+      El score te dice <em>cuánto</em>. Los hallazgos te dicen <em>qué</em> arreglar, citando la
+      frase exacta del agente que lo delata.
+    </p>
+  </li>
+  <li>
+    <h3>Aplica las sugerencias y vuelve a correrlo</h3>
+    <p>
+      Cuando el juez detecta un hueco en tu conocimiento, te propone la pregunta y respuesta que
+      faltaban. El botón <strong>«Añadir al conocimiento»</strong> la mete en tu base de un click.
+      Vuelve a correr el Laboratorio y compara.
+    </p>
+  </li>
+</ol>
+
+<h2>Cómo leer el resultado</h2>
+
+<div class="score-demo">
+  <div>
+    <div class="score-num">92</div>
+    <div class="score-delta">▲ +25 vs anterior</div>
+  </div>
+  <div class="score-txt">
+    El score va de 0 a 100. Es el porcentaje de conversaciones que el juez dio por buenas
+    (una conversación con defectos cuenta media). El <strong>delta</strong> compara con tu
+    corrida anterior — es lo único que te dice si el cambio que hiciste sirvió de algo.
+  </div>
+</div>
+
+<p>Cada conversación recibe un veredicto:</p>
+
+<div class="verdicts">
+  <div class="v">
+    <span class="v-dot">🟢</span>
+    <span>
+      <div class="v-name">Bien</div>
+      <div class="v-desc">Hizo lo correcto, con tono humano y sin inventarse nada. Escalar a una persona cuando no sabía <em>también</em> es hacerlo bien.</div>
+    </span>
+  </div>
+  <div class="v">
+    <span class="v-dot">🟡</span>
+    <span>
+      <div class="v-name">Con defectos</div>
+      <div class="v-desc">Cumplió, pero flojo: sonó robótico, se fue por las ramas o dejó al cliente sin un siguiente paso claro.</div>
+    </span>
+  </div>
+  <div class="v">
+    <span class="v-dot">🔴</span>
+    <span>
+      <div class="v-name">Falla</div>
+      <div class="v-desc">Se inventó datos que no le diste, o debió pasar el caso a una persona y no lo hizo. Esto es lo que hay que arreglar sí o sí.</div>
+    </span>
+  </div>
+</div>
+
+<h3>Los hallazgos</h3>
+
+<p>Cuando algo va mal, el juez te lo enseña con la frase exacta del agente:</p>
+
+<div class="finding-demo">
+  <div class="finding-tag">Alucinación</div>
+  <div class="finding-ev">“Claro, el envío cuesta $5 y llega en 24 horas.”</div>
+  <div class="finding-sug">
+    <strong>Sugiere añadir —</strong><br>
+    <strong>P:</strong> ¿Cuánto cuesta el envío y cuánto tarda?<br>
+    <strong>R:</strong> [completa con tus datos reales]
+  </div>
+</div>
+
+<p>Hay cuatro tipos:</p>
+
+<div class="table-scroll">
+<table>
+  <thead>
+    <tr><th>Tipo</th><th>Qué significa</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Alucinación</td><td>El agente afirmó un dato concreto que <strong>no está en tu base de conocimiento</strong>. Se lo inventó. Es el fallo más peligroso: suena convincente y es mentira.</td></tr>
+    <tr><td>Fuera del conocimiento</td><td>El cliente preguntó algo que no tienes cargado. No es culpa del agente: es un hueco en tu base, y normalmente viene con una sugerencia para taparlo.</td></tr>
+    <tr><td>Debió escalar</td><td>Hacía falta una persona y el bot siguió atendiendo solo.</td></tr>
+    <tr><td>Tono</td><td>Sonó a robot, se repitió, o trató mal a un cliente enfadado.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>El escalado a humano</h2>
+
+<p>
+  Dos de los seis clientes existen para probar una cosa concreta: que el agente sepa
+  <strong>rendirse a tiempo</strong> y pasarle el chat a una persona, en vez de inventarse una
+  respuesta o dejar al cliente hablando con una máquina que no le sirve.
+</p>
+
+<p>
+  Cuando eso pasa, verás <code>⏸ escaló</code> en el caso, y en el WhatsApp real ese chat
+  queda en modo <strong>HUMANO</strong>: la IA deja de responder ahí hasta que un operador lo
+  devuelva a modo IA desde la bandeja.
+</p>
+
+<div class="callout warn">
+  <div class="callout-title">El escalado automático viene apagado</div>
+  <p>
+    Se enciende con la variable <code>AUTO_HANDOFF=true</code>. Está apagado de fábrica a
+    propósito: si lo activas con la base de conocimiento vacía, el agente no podrá responder
+    casi nada y acabará escalando media bandeja a modo humano.
+  </p>
+  <p>
+    El orden correcto es: carga el conocimiento, corre el Laboratorio, y cuando el score te
+    convenza, enciéndelo.
+  </p>
+</div>
+
+<h2>Preguntas frecuentes</h2>
+
+<h3>¿Puede escribirle a un cliente real por error?</h3>
+<p>
+  No. El Laboratorio no tiene acceso al envío de mensajes: las conversaciones se generan y se
+  guardan en un entorno aparte. Ni siquiera usa números reales.
+</p>
+
+<h3>¿Cuánto cuesta correrlo?</h3>
+<p>
+  Unas 30 llamadas al modelo por corrida — céntimos con un modelo económico. Puedes correrlo
+  todas las veces que quieras.
+</p>
+
+<h3>¿Por qué mi score bajó si no toqué nada?</h3>
+<p>
+  Los clientes simulados son deterministas, pero el agente y el juez son modelos de IA y tienen
+  algo de variación natural. Movimientos de unos pocos puntos entre corridas idénticas son
+  normales. Lo que importa son los saltos grandes y los hallazgos, no un punto arriba o abajo.
+</p>
+
+<h3>¿Un 100 significa que ya está perfecto?</h3>
+<p>
+  Significa que pasó estas seis pruebas. Son los seis fallos más comunes y más caros, pero no
+  son todos los casos posibles. Es un termómetro muy útil, no un certificado.
+</p>
+
+<h3>¿Puedo enseñarle este informe a un cliente?</h3>
+<p>
+  Para eso está pensado. Cuando entregas un agente, el reporte del Laboratorio es la evidencia
+  de que funciona — y de que no se inventa cosas.
+</p>
+
+<hr>
+
+<footer>
+  <p>
+    <strong>WhatsApp Agent</strong> · My Store Digital<br>
+    ¿Dudas o algo no cuadra? Escríbenos y lo revisamos.
+  </p>
+</footer>
+
+</div>
+</body>
+</html>

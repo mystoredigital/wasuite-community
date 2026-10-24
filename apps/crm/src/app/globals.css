@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Tokens de color en canal HSL (sin coma alfa) para poder aplicar opacidad desde
+ * Tailwind con /<alpha>. El tema por defecto es claro; .dark lo invierte.
+ */
+@layer base {
+  /*
+   * Paleta de My Store: oro sobre papel. El acento es el mismo oro de
+   * mystoredigital.com, pero la base dejó de ser negra: la bandeja se lee
+   * durante horas y el negro cansa. Los neutros son cálidos (matiz ~40), no
+   * los grises fríos de Tailwind, para que el blanco no se vea azulado al lado
+   * del oro.
+   *
+   * El oro se usa como en la web: acento y señal (no leídos, botón de enviar,
+   * lo activo), nunca como relleno de áreas grandes.
+   *
+   * El verde se queda, pero solo donde SIGNIFICA algo: 'WhatsApp conectado',
+   * éxito. Como acento general competía con la marca; como estado vale más.
+   */
+  :root,
+  .light {
+    --bg: 40 44% 99%;            /* papel #fdfcfa */
+    --bg-subtle: 40 36% 95%;     /* barra lateral #f7f4ee */
+    --bg-panel: 0 0% 100%;       /* superficies e inputs */
+    --bg-elevated: 39 32% 91%;   /* fila activa, burbuja entrante #f0ebe2 */
+    --border: 39 22% 82%;        /* #dcd5c8 */
+    --border-soft: 41 28% 89%;   /* #ebe6db */
+    --fg: 30 8% 10%;             /* #1c1a18 */
+    /* Sobre papel hay que bajar más que en oscuro: un gris del 52% da 3,4:1 y
+       una hora de mensaje a 10px con ese contraste no se lee. */
+    --fg-muted: 37 7% 30%;
+    --fg-subtle: 37 8% 45%;
+    /* El naranja de marca (#fd9100) es demasiado claro para texto sobre papel:
+       aquí va el mismo matiz oscurecido, que sí pasa contraste (4.7:1). */
+    --accent: 34 92% 34%;        /* #a75e07 */
+    --accent-fg: 0 0% 100%;
+    --accent-solid: 34 99% 50%;  /* naranja de marca #fd9100, tal cual */
+    --accent-solid-fg: 30 8% 10%;
+    --accent-soft: 38 92% 50%;   /* gold-500: etiquetas y burbuja de IA, con alfa */
+    /* Los tres estados se usan como texto sobre fondo claro (avisos de conexión,
+       errores de envío): van oscurecidos para pasar 4,5:1. */
+    --success: 152 60% 30%;
+    --warning: 30 95% 33%;
+    --danger: 2 72% 44%;
+    /* Avatares de contacto: el matiz lo pone el nombre, la luminosidad el tema. */
+    --av-bg-l: 89%;
+    --av-fg-l: 30%;
+  }
+
+  .dark {
+    --bg: 224 71% 4%;            /* dark-950 #030712 */
+    --bg-subtle: 222 47% 8%;
+    --bg-panel: 221 39% 11%;     /* dark-900 #111827 */
+    --bg-elevated: 215 28% 17%;  /* dark-800 #1f2937 */
+    --border: 215 20% 24%;
+    --border-soft: 217 25% 15%;
+    --fg: 210 20% 98%;           /* #f9fafb */
+    --fg-muted: 218 11% 65%;
+    --fg-subtle: 220 9% 46%;
+    --accent: 38 92% 50%;        /* gold-500 #f59e0b */
+    --accent-fg: 224 71% 4%;     /* texto oscuro sobre oro: el oro es claro */
+    /* En oscuro el oro ya servía para las dos cosas: aquí no hay que separarlo. */
+    --accent-solid: 38 92% 50%;
+    --accent-solid-fg: 224 71% 4%;
+    --accent-soft: 43 96% 56%;   /* gold-400 #fbbf24 */
+    --success: 150 55% 45%;
+    --warning: 43 96% 56%;
+    --danger: 4 72% 58%;
+    --av-bg-l: 26%;
+    --av-fg-l: 78%;
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-bg text-fg;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  /* Scrollbars discretas y coherentes con el tema. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-fg-subtle;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}

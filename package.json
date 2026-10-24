@@ -1,0 +1,11 @@
+{
+  "name": "wasuite",
+  "private": true,
+  "description": "CRM de ventas por WhatsApp con IA incluida — self-hosted, un solo login.",
+  "scripts": {
+    "setup": "node scripts/setup-env.mjs",
+    "local": "docker compose -f docker-compose.local.yml up -d --build",
+    "local:down": "docker compose -f docker-compose.local.yml down",
+    "local:logs": "docker compose -f docker-compose.local.yml logs -f --tail=100"
+  }
+}

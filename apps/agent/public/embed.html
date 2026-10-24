@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>WhatsApp Agent · embed</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<style>
+body{margin:0;background:#0f1419;color:#e7e9ea;font-family:-apple-system,system-ui,sans-serif;height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.box{text-align:center;max-width:520px;padding:24px}
+.spinner{display:inline-block;width:32px;height:32px;border:3px solid #1d9bf0;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{color:#f44336;margin-top:12px;font-size:13px;font-family:ui-monospace,monospace}
+.debug{margin-top:24px;text-align:left;background:#16202a;padding:12px;border-radius:8px;font-family:ui-monospace,monospace;font-size:11px;max-height:240px;overflow-y:auto;border:1px solid #2a3744}
+.debug div{margin-bottom:4px;color:#8899a6}
+.debug .ok{color:#4caf50}
+.debug .err-line{color:#f44336}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="spinner" id="spin"></div>
+  <div id="status">Autenticando…</div>
+  <div class="err" id="err"></div>
+  <div class="debug" id="debug" style="display:none"></div>
+</div>
+<script>
+const $status = document.getElementById('status');
+const $err = document.getElementById('err');
+const $debug = document.getElementById('debug');
+const debug = [];
+function log(line, cls = '') {
+  debug.push({ line, cls });
+  $debug.style.display = 'block';
+  $debug.innerHTML = debug.map(d => `<div class="${d.cls}">${escapeHtml(d.line)}</div>`).join('');
+  $debug.scrollTop = $debug.scrollHeight;
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function ok(msg) {
+  document.getElementById('spin').style.display = 'none';
+  $status.textContent = msg;
+}
+function fail(msg) {
+  document.getElementById('spin').style.display = 'none';
+  $status.textContent = 'No se pudo autenticar';
+  $err.textContent = msg;
+}
+
+const params = new URLSearchParams(location.search);
+log(`URL params: ${location.search || '(ninguno)'}`);
+
+let resolved = false;
+
+// Estrategia 1: query params (URL substituido por GHL antes del iframe)
+async function trySoftSso() {
+  const locationId = params.get('location_id') || params.get('locationId');
+  if (!locationId) return false;
+  log(`Soft SSO: location_id=${locationId.slice(0, 10)}…`);
+  try {
+    const res = await fetch('/api/embed/sso', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        locationId,
+        userId: params.get('user_id') || params.get('userId'),
+        userEmail: params.get('user_email') || params.get('userEmail'),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.locationId) {
+      log(`Soft SSO falló: ${data.error || res.status}`, 'err-line');
+      return false;
+    }
+    log(`Soft SSO ✓ locationId=${data.locationId}`, 'ok');
+    resolved = true;
+    ok('Conectado, cargando…');
+    location.href = `/?tenant=${encodeURIComponent(data.locationId)}&embed=1`;
+    return true;
+  } catch (e) {
+    log(`Soft SSO error: ${e.message}`, 'err-line');
+    return false;
+  }
+}
+
+// Estrategia 2: postMessage cifrado de GHL
+function listenForPostMessage() {
+  window.addEventListener('message', async (event) => {
+    if (resolved) return;
+    if (!event.data) return;
+    log(`postMessage recibido (origin=${event.origin}): ${JSON.stringify(event.data).slice(0, 120)}`);
+    const payload = event.data.payload || event.data.encryptedData || (typeof event.data === 'string' ? event.data : null);
+    if (!payload) {
+      log('  (no contiene payload cifrado, ignorando)');
+      return;
+    }
+    try {
+      const res = await fetch('/api/embed/sso', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ encryptedData: payload }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.locationId) {
+        return log(`SSO encrypted falló: ${data.error}`, 'err-line');
+      }
+      log(`SSO encrypted ✓ locationId=${data.locationId}`, 'ok');
+      resolved = true;
+      ok('Conectado, cargando…');
+      location.href = `/?tenant=${encodeURIComponent(data.locationId)}&embed=1`;
+    } catch (e) {
+      log(`SSO encrypted error: ${e.message}`, 'err-line');
+    }
+  });
+  // Pide los datos a GHL parent (varios formatos por compatibilidad)
+  try {
+    window.parent.postMessage({ message: 'REQ_USER_DATA' }, '*');
+    log('Enviado: postMessage { message: REQ_USER_DATA }');
+    window.parent.postMessage('REQ_USER_DATA', '*');
+    log('Enviado: postMessage "REQ_USER_DATA"');
+  } catch (e) {
+    log(`postMessage falló: ${e.message}`, 'err-line');
+  }
+}
+
+(async () => {
+  listenForPostMessage();
+  const softOk = await trySoftSso();
+  if (softOk) return;
+  // Da tiempo al postMessage. Si después de 8s no se resolvió → mostrar error con debug visible
+  setTimeout(() => {
+    if (!resolved) {
+      fail('No se recibió SSO de GHL ni location_id en la URL. Verifica que el Custom Menu Link tenga la URL con ?location_id={{location.id}}');
+    }
+  }, 8000);
+})();
+</script>
+</body>
+</html>
